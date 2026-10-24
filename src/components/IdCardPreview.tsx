@@ -12,7 +12,8 @@ import {
   Phone,
   CheckCircle2,
   FileCheck,
-  AlertCircle
+  AlertCircle,
+  ExternalLink
 } from "lucide-react";
 
 interface IdCardPreviewProps {
@@ -75,6 +76,15 @@ export default function IdCardPreview({ profile }: IdCardPreviewProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          <a
+            href={`/scan/${profile.janRakshaCode}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-xs font-semibold text-[#1769E0] border border-blue-200 transition-colors"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            <span>Open Scan View</span>
+          </a>
           {qrDataUrl && (
             <a
               href={qrDataUrl}

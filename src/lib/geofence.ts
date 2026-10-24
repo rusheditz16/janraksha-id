@@ -24,44 +24,50 @@ export function calculateHaversineDistance(
   return Math.round(R * c);
 }
 
+const DEFAULT_BOOTHS = [
+  {
+    id: "booth-1",
+    name: "Central Police Assistance & Medical Booth #1",
+    zone: "Zone A - Main Concourse",
+    latitude: 28.6445,
+    longitude: 77.2165,
+    contactName: "Inspector R. Verma",
+    contactPhone: "+91 98450 12345",
+  },
+  {
+    id: "booth-2",
+    name: "Child & Senior Citizen Reunification Booth #2",
+    zone: "Zone B - North Gate Exit",
+    latitude: 28.646,
+    longitude: 77.218,
+    contactName: "Volunteer Aarti Deshmukh",
+    contactPhone: "+91 98111 22334",
+  },
+  {
+    id: "booth-3",
+    name: "First-Aid Emergency Red Cross Desk #3",
+    zone: "Zone C - Food Court",
+    latitude: 28.643,
+    longitude: 77.214,
+    contactName: "Dr. K. Saxena",
+    contactPhone: "+91 97111 99887",
+  },
+];
+
 // Locate nearest official assistance booth
 export async function findNearestHelpdeskBooth(latitude: number, longitude: number) {
   try {
-    const booths = await prisma.helpdeskBooth.findMany({
-      where: { isOperational: true },
-    });
-
-    if (booths.length === 0) {
-      // Seed default operational booths if table empty
-      const defaultBooths = await prisma.helpdeskBooth.createMany({
-        data: [
-          {
-            name: "Central Police Assistance & Medical Booth #1",
-            zone: "Zone A - Main Concourse",
-            latitude: 28.6445,
-            longitude: 77.2165,
-            contactName: "Inspector R. Verma",
-            contactPhone: "+91 98450 12345",
-          },
-          {
-            name: "Child & Senior Citizen Reunification Booth #2",
-            zone: "Zone B - North Gate Exit",
-            latitude: 28.646,
-            longitude: 77.218,
-            contactName: "Volunteer Aarti Deshmukh",
-            contactPhone: "+91 98111 22334",
-          },
-          {
-            name: "First-Aid Emergency Red Cross Desk #3",
-            zone: "Zone C - Food Court",
-            latitude: 28.643,
-            longitude: 77.214,
-            contactName: "Dr. K. Saxena",
-            contactPhone: "+91 97111 99887",
-          },
-        ],
+    let booths: any[] = [];
+    try {
+      booths = await prisma.helpdeskBooth.findMany({
+        where: { isOperational: true },
       });
-      return findNearestHelpdeskBooth(latitude, longitude);
+    } catch (e) {
+      console.warn("DB booth fetch failed, using default booths:", e);
+    }
+
+    if (!booths || booths.length === 0) {
+      booths = DEFAULT_BOOTHS;
     }
 
     let nearest = booths[0];

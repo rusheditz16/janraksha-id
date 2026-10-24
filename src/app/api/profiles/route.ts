@@ -1,7 +1,5 @@
 import { prisma } from "@/lib/prisma";
-
-// Fallback in-memory storage for serverless environments (like Vercel) where SQLite file write is restricted
-let inMemoryProfiles: any[] = [];
+import { saveProfileToMemory, getAllProfilesFromMemory } from "@/lib/memoryStore";
 
 // GET: fetch profiles with search & filter
 export async function GET(request: Request) {
@@ -34,21 +32,45 @@ export async function GET(request: Request) {
         orderBy: { updatedAt: "desc" },
       });
 
-      return Response.json({ success: true, count: profiles.length, data: profiles });
-    } catch (dbError) {
-      // Graceful fallback to memory storage on read failure
-      let filtered = [...inMemoryProfiles];
+      // Synchronize found profiles with in-memory store
+      profiles.forEach((p) => saveProfileToMemory(p));
+
+      // Also include any profiles registered in memory that aren't in SQLite
+      const memoryProfiles = getAllProfilesFromMemory();
+      const combinedMap = new Map();
+      profiles.forEach((p) => combinedMap.set(p.janRakshaCode, p));
+      memoryProfiles.forEach((p) => {
+        if (!combinedMap.has(p.janRakshaCode)) {
+          combinedMap.set(p.janRakshaCode, p);
+        }
+      });
+
+      let combined = Array.from(combinedMap.values());
       if (query) {
-        filtered = filtered.filter(
+        combined = combined.filter(
           (p) =>
-            p.fullName.toLowerCase().includes(query.toLowerCase()) ||
-            p.janRakshaCode.toLowerCase().includes(query.toLowerCase())
+            p.fullName?.toLowerCase().includes(query.toLowerCase()) ||
+            p.janRakshaCode?.toLowerCase().includes(query.toLowerCase())
         );
       }
-      if (status && status !== "ALL") filtered = filtered.filter((p) => p.status === status);
-      if (personType && personType !== "ALL") filtered = filtered.filter((p) => p.personType === personType);
+      if (status && status !== "ALL") combined = combined.filter((p) => p.status === status);
+      if (personType && personType !== "ALL") combined = combined.filter((p) => p.personType === personType);
 
-      return Response.json({ success: true, count: filtered.length, data: filtered });
+      return Response.json({ success: true, count: combined.length, data: combined });
+    } catch (dbError) {
+      // Memory Store Fallback
+      let combined = getAllProfilesFromMemory();
+      if (query) {
+        combined = combined.filter(
+          (p) =>
+            p.fullName?.toLowerCase().includes(query.toLowerCase()) ||
+            p.janRakshaCode?.toLowerCase().includes(query.toLowerCase())
+        );
+      }
+      if (status && status !== "ALL") combined = combined.filter((p) => p.status === status);
+      if (personType && personType !== "ALL") combined = combined.filter((p) => p.personType === personType);
+
+      return Response.json({ success: true, count: combined.length, data: combined });
     }
   } catch (error: any) {
     console.error("Profiles fetch error:", error);
@@ -99,6 +121,9 @@ export async function POST(request: Request) {
       dispatchAlerts: [],
     };
 
+    // Save into universal memory store immediately so scan page and search can find it
+    saveProfileToMemory(profileData);
+
     try {
       const newProfile = await prisma.personProfile.create({
         data: {
@@ -127,11 +152,10 @@ export async function POST(request: Request) {
         },
       });
 
-      inMemoryProfiles.unshift(newProfile);
+      saveProfileToMemory(newProfile);
       return Response.json({ success: true, data: newProfile }, { status: 201 });
     } catch (dbErr: any) {
-      console.warn("Prisma write warning (fallback to serverless session storage):", dbErr.message);
-      inMemoryProfiles.unshift(profileData);
+      console.warn("Prisma write notice (using universal storage):", dbErr.message);
       return Response.json({ success: true, data: profileData, fallback: true }, { status: 201 });
     }
   } catch (error: any) {

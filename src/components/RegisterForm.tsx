@@ -13,7 +13,8 @@ import {
   AlertCircle,
   FileCheck,
   Building2,
-  Lock
+  Lock,
+  ExternalLink
 } from "lucide-react";
 import IdCardPreview from "@/components/IdCardPreview";
 
@@ -168,15 +169,26 @@ export default function RegisterForm() {
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => {
-                setCreatedProfile(null);
-                setCurrentStep(1);
-              }}
-              className="text-xs font-semibold px-4 py-2 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-[#172B4D]"
-            >
-              Register Another Person
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <a
+                href={`/scan/${createdProfile.janRakshaCode}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-semibold px-4 py-2 rounded-lg bg-[#1769E0] text-white hover:bg-[#1255B8] flex items-center gap-1.5 transition-colors shadow-sm"
+              >
+                <span>Open Emergency View</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+              <button
+                onClick={() => {
+                  setCreatedProfile(null);
+                  setCurrentStep(1);
+                }}
+                className="text-xs font-semibold px-4 py-2 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-[#172B4D]"
+              >
+                Register Another Person
+              </button>
+            </div>
           </div>
 
           <IdCardPreview profile={createdProfile} />

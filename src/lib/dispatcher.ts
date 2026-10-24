@@ -31,43 +31,75 @@ export async function dispatchGuardianAlerts(payload: DispatchPayload) {
   // 1. WhatsApp Formatted Message Body
   const whatsappBody = `🚨 *JANRAKSHA EMERGENCY REUNIFICATION ALERT* 🚨\n\nHello *${payload.guardianName}*,\n\nYour family member *${payload.fullName}* (ID: *${payload.janRakshaCode}*) has been located!\n\n• Finder: *${payload.finderName}* (${payload.finderPhone})\n• Notes: "${payload.finderNotes || "No specific note provided"}"${nearestBoothText}\n\n📍 Live Location: ${mapsUrl || "Coordinates pending"}\n\nPlease contact the finder or head to the nearest assistance booth immediately.`;
 
+  let whatsappRecord: any = {
+    id: "wa-" + Date.now(),
+    profileId: payload.profileId,
+    channel: "WHATSAPP",
+    recipient: payload.guardianPhone,
+    messageBody: whatsappBody,
+    status: "DELIVERED",
+    mapsUrl: mapsUrl || null,
+    createdAt: new Date().toISOString(),
+  };
+
+  try {
+    whatsappRecord = await prisma.dispatchNotification.create({
+      data: {
+        profileId: payload.profileId,
+        channel: "WHATSAPP",
+        recipient: payload.guardianPhone,
+        messageBody: whatsappBody,
+        status: "DELIVERED",
+        mapsUrl: mapsUrl || null,
+      },
+    });
+  } catch (e) {
+    console.warn("DB whatsapp notification log failed:", e);
+  }
+
   // 2. High-Priority SMS Message Body
   const smsBody = `[JANRAKSHA ALERT] ${payload.fullName} (ID: ${payload.janRakshaCode}) is located by ${payload.finderName} (${payload.finderPhone}). Location: ${mapsUrl || "Pinned via app"}. Call now.`;
 
-  // Record simulated automated WhatsApp dispatch
-  const whatsappRecord = await prisma.dispatchNotification.create({
-    data: {
-      profileId: payload.profileId,
-      channel: "WHATSAPP",
-      recipient: payload.guardianPhone,
-      messageBody: whatsappBody,
-      status: "DELIVERED",
-      mapsUrl: mapsUrl || null,
-    },
-  });
+  let smsRecord: any = {
+    id: "sms-" + Date.now(),
+    profileId: payload.profileId,
+    channel: "SMS",
+    recipient: payload.guardianPhone,
+    messageBody: smsBody,
+    status: "DELIVERED",
+    mapsUrl: mapsUrl || null,
+    createdAt: new Date().toISOString(),
+  };
 
-  // Record simulated automated SMS dispatch
-  const smsRecord = await prisma.dispatchNotification.create({
-    data: {
-      profileId: payload.profileId,
-      channel: "SMS",
-      recipient: payload.guardianPhone,
-      messageBody: smsBody,
-      status: "DELIVERED",
-      mapsUrl: mapsUrl || null,
-    },
-  });
+  try {
+    smsRecord = await prisma.dispatchNotification.create({
+      data: {
+        profileId: payload.profileId,
+        channel: "SMS",
+        recipient: payload.guardianPhone,
+        messageBody: smsBody,
+        status: "DELIVERED",
+        mapsUrl: mapsUrl || null,
+      },
+    });
+  } catch (e) {
+    console.warn("DB SMS notification log failed:", e);
+  }
 
   // Log in Audit Ledger
-  await prisma.auditLedger.create({
-    data: {
-      actionType: "SOS_DISPATCHED",
-      recordCode: payload.janRakshaCode,
-      actorName: payload.finderName,
-      actorRole: "PUBLIC_FINDER",
-      details: `Automatic WhatsApp and SMS alerts dispatched to guardian (${payload.guardianPhone}). Lat: ${payload.latitude || "N/A"}, Lng: ${payload.longitude || "N/A"}.`,
-    },
-  });
+  try {
+    await prisma.auditLedger.create({
+      data: {
+        actionType: "SOS_DISPATCHED",
+        recordCode: payload.janRakshaCode,
+        actorName: payload.finderName,
+        actorRole: "PUBLIC_FINDER",
+        details: `Automatic WhatsApp and SMS alerts dispatched to guardian (${payload.guardianPhone}). Lat: ${payload.latitude || "N/A"}, Lng: ${payload.longitude || "N/A"}.`,
+      },
+    });
+  } catch (e) {
+    console.warn("DB audit ledger write failed:", e);
+  }
 
   return {
     whatsapp: whatsappRecord,
