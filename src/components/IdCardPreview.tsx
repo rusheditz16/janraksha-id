@@ -147,7 +147,14 @@ export default function IdCardPreview({ profile }: IdCardPreviewProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <a
+            href={`/edit?code=${encodeURIComponent(profile.janRakshaCode)}`}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 border border-slate-300 transition-colors shadow-xs"
+          >
+            <Edit3 className="w-3.5 h-3.5 text-[#1769E0]" />
+            <span>Edit Details</span>
+          </a>
           <a
             href={scanUrl}
             target="_blank"

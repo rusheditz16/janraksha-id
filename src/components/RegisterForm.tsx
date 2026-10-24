@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { encodeProfilePayload } from "@/lib/qrPayload";
 import {
   User,
@@ -16,7 +17,8 @@ import {
   Building2,
   Lock,
   ExternalLink,
-  Clock
+  Clock,
+  Edit3
 } from "lucide-react";
 import IdCardPreview from "@/components/IdCardPreview";
 
@@ -209,6 +211,13 @@ export default function RegisterForm() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href={`/edit?code=${encodeURIComponent(createdProfile.janRakshaCode)}`}
+                className="text-xs font-semibold px-4 py-2 rounded-lg bg-white border border-[#1769E0] text-[#1769E0] hover:bg-blue-50 flex items-center gap-1.5 transition-colors shadow-xs"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Edit Given Details</span>
+              </Link>
               <a
                 href={`/scan/${encodeURIComponent(createdProfile.janRakshaCode)}${
                   encodeProfilePayload(createdProfile)
@@ -751,7 +760,7 @@ export default function RegisterForm() {
                     </div>
                   )}
 
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                  <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
                     <button
                       type="button"
                       onClick={() => {
@@ -761,18 +770,28 @@ export default function RegisterForm() {
                       className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#172B4D] flex items-center gap-1.5 transition-colors"
                     >
                       <Shield className="w-3.5 h-3.5 text-[#1769E0]" />
-                      <span>View Badge & QR</span>
+                      <span>Badge & QR</span>
                     </button>
 
-                    <a
-                      href={pScanUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#1769E0] border border-blue-200 flex items-center gap-1.5 transition-colors"
-                    >
-                      <span>Emergency View</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
+                    <div className="flex items-center gap-1.5">
+                      <Link
+                        href={`/edit?code=${encodeURIComponent(person.janRakshaCode)}`}
+                        className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 flex items-center gap-1 transition-colors"
+                      >
+                        <Edit3 className="w-3 h-3 text-[#1769E0]" />
+                        <span>Edit</span>
+                      </Link>
+
+                      <a
+                        href={pScanUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#1769E0] border border-blue-200 flex items-center gap-1 transition-colors"
+                      >
+                        <span>View</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
                   </div>
                 </div>
               );

@@ -20,7 +20,8 @@ import {
   Building2,
   Lock,
   Compass,
-  Radio
+  Radio,
+  Edit3
 } from "lucide-react";
 
 interface EmergencyClientViewProps {
@@ -429,6 +430,18 @@ export default function EmergencyClientView({ profile }: EmergencyClientViewProp
             {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-[#138A62]" /> : <Copy className="w-3.5 h-3.5" />}
             <span>{copied ? "Link Copied!" : "Copy Record Link"}</span>
           </button>
+        </div>
+
+        {/* Guardian / Responder Edit Details */}
+        <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs text-[#64748B] px-2">
+          <span>Registered guardian or camp responder?</span>
+          <a
+            href={`/edit?code=${encodeURIComponent(profile.janRakshaCode)}`}
+            className="flex items-center gap-1 text-[#1769E0] hover:underline font-semibold"
+          >
+            <Edit3 className="w-3.5 h-3.5" />
+            <span>Update Given Details</span>
+          </a>
         </div>
 
       </div>

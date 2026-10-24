@@ -16,7 +16,8 @@ import {
   Sun,
   Moon,
   Wifi,
-  WifiOff
+  WifiOff,
+  Edit3
 } from "lucide-react";
 import { LanguageCode, getTranslation } from "@/lib/translations";
 
@@ -78,6 +79,7 @@ export default function Navbar() {
     { href: "/dashboard", label: t.dashboard, icon: LayoutDashboard },
     { href: "/scanner", label: t.scanner, icon: QrCode },
     { href: "/register", label: t.registerPerson, icon: UserPlus },
+    { href: "/edit", label: t.editDetails, icon: Edit3 },
   ];
 
   return (

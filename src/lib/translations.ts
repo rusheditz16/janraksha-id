@@ -27,6 +27,7 @@ export interface TranslationDictionary {
   assistedMatching: string;
   noSmartphone: string;
   consentWithdrawal: string;
+  editDetails: string;
 }
 
 export const translations: Record<LanguageCode, TranslationDictionary> = {
@@ -54,6 +55,7 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     assistedMatching: "Assisted Case Matching",
     noSmartphone: "Paper Intake (No Smartphone)",
     consentWithdrawal: "Withdraw Consent & Purge",
+    editDetails: "Update Details",
   },
   hi: {
     appName: "जनरक्षा आईडी",
@@ -79,6 +81,7 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     assistedMatching: "सहायक मिलान सुझाव",
     noSmartphone: "कागजी पर्ची (बिना फोन)",
     consentWithdrawal: "सहमति वापस लें व डेटा हटाएं",
+    editDetails: "विवरण अपडेट करें",
   },
   bn: {
     appName: "জনরক্ষা আইডি",
@@ -104,6 +107,7 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     assistedMatching: "সহযোগী কেস মিলান",
     noSmartphone: "কাগজের নথি (স্মার্টফোন ছাড়া)",
     consentWithdrawal: "সম্মতি প্রত্যাহার ও তথ্য মোছা",
+    editDetails: "বিবরণ আপডেট করুন",
   },
   gu: {
     appName: "જનરક્ષા આઈડી",
@@ -129,6 +133,7 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     assistedMatching: "સહાયક કેસ મેળવણી",
     noSmartphone: "કાગળ રસીદ (ફોન વગર)",
     consentWithdrawal: "સંમતિ રદ કરો અને ડેટા કાઢી નાખો",
+    editDetails: "વિગતો અપડેટ કરો",
   },
   mr: {
     appName: "जनरक्षा आयडी",
@@ -154,6 +159,7 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     assistedMatching: "सहाय्यक केस जुळवणी",
     noSmartphone: "कागदी नोंद (स्मार्टफोनशिवाय)",
     consentWithdrawal: "संमती मागे घ्या व डेटा हटवा",
+    editDetails: "तपशील अपडेट करा",
   },
   ta: {
     appName: "ஜன்ரக்ஷா ஐடி",
@@ -179,6 +185,7 @@ export const translations: Record<LanguageCode, TranslationDictionary> = {
     assistedMatching: "வழக்கு ஒப்பீட்டு உதவி",
     noSmartphone: "காகித சீட்டு (ஸ்மார்ட்போன் இன்றி)",
     consentWithdrawal: "ஒப்புதலைத் திரும்பப் பெறுக",
+    editDetails: "விவரங்களைப் புதுப்பிக்கவும்",
   },
 };
 

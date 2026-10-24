@@ -53,7 +53,8 @@ import {
   Copy,
   Check,
   Building,
-  X
+  X,
+  Edit3
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -627,6 +628,13 @@ export default function DashboardClient() {
                         </span>
                       )}
                       <Link
+                        href={`/edit?code=${encodeURIComponent(p.janRakshaCode)}`}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-[#1769E0] hover:bg-slate-100"
+                        title="Edit Given Details"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </Link>
+                      <Link
                         href={`/scan/${encodeURIComponent(p.janRakshaCode)}${
                           encodeProfilePayload(p) ? `?d=${encodeProfilePayload(p)}` : ""
                         }`}
@@ -672,15 +680,24 @@ export default function DashboardClient() {
                       <Printer className="w-3.5 h-3.5" />
                       <span>Paper Slip</span>
                     </button>
-                    <Link
-                      href={`/scan/${encodeURIComponent(selectedProfile.janRakshaCode)}${
-                        encodeProfilePayload(selectedProfile) ? `?d=${encodeProfilePayload(selectedProfile)}` : ""
-                      }`}
-                      target="_blank"
-                      className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-50 text-[#1769E0] hover:bg-blue-100 transition-colors"
-                    >
-                      View Card →
-                    </Link>
+                    <div className="flex items-center gap-1.5">
+                      <Link
+                        href={`/edit?code=${encodeURIComponent(selectedProfile.janRakshaCode)}`}
+                        className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 flex items-center gap-1 transition-colors"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-[#1769E0]" />
+                        <span>Edit Details</span>
+                      </Link>
+                      <Link
+                        href={`/scan/${encodeURIComponent(selectedProfile.janRakshaCode)}${
+                          encodeProfilePayload(selectedProfile) ? `?d=${encodeProfilePayload(selectedProfile)}` : ""
+                        }`}
+                        target="_blank"
+                        className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-50 text-[#1769E0] hover:bg-blue-100 transition-colors"
+                      >
+                        View Card →
+                      </Link>
+                    </div>
                   </div>
                 </div>
 
