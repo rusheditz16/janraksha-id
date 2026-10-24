@@ -1,18 +1,28 @@
 import { prisma } from "@/lib/prisma";
+import { getAllProfilesFromMemory } from "@/lib/memoryStore";
 
 export async function GET(request: Request) {
   try {
-    const profiles = await prisma.personProfile.findMany({
-      include: {
-        scanLogs: {
-          orderBy: { scannedAt: "desc" },
-          take: 2,
+    let profiles: any[] = [];
+    try {
+      profiles = await prisma.personProfile.findMany({
+        include: {
+          scanLogs: {
+            orderBy: { scannedAt: "desc" },
+            take: 2,
+          },
+          reunificationNotes: true,
+          dispatchAlerts: true,
         },
-        reunificationNotes: true,
-        dispatchAlerts: true,
-      },
-      orderBy: { updatedAt: "desc" },
-    });
+        orderBy: { updatedAt: "desc" },
+      });
+    } catch (dbErr) {
+      console.warn("DB reports fetch failed, using memory fallback:", dbErr);
+    }
+
+    if (!profiles || profiles.length === 0) {
+      profiles = getAllProfilesFromMemory();
+    }
 
     const activeMissing = profiles.filter((p) => p.status === "REPORTED_MISSING").length;
     const located = profiles.filter((p) => p.status === "REPORTED_FOUND").length;
@@ -42,8 +52,8 @@ export async function GET(request: Request) {
         phone: p.guardianPhone,
         medicalFlag: p.chronicIllness || p.allergies || "None",
         lastKnownLocation: p.lastSeenLocation || "Unpinned",
-        notesLogged: p.reunificationNotes.length,
-        automatedAlertsSent: p.dispatchAlerts.length,
+        notesLogged: p.reunificationNotes ? p.reunificationNotes.length : 0,
+        automatedAlertsSent: p.dispatchAlerts ? p.dispatchAlerts.length : 0,
       })),
     };
 

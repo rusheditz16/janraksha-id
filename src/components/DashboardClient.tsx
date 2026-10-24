@@ -188,31 +188,35 @@ export default function DashboardClient() {
   // Export Formal PDF Incident Report
   const handleExportPDF = async () => {
     try {
-      const res = await fetch("/api/reports");
-      const { report } = await res.json();
-
       const doc = new jsPDF();
       
+      const total = profiles.length;
+      const activeMissing = profiles.filter((p) => p.status === "REPORTED_MISSING").length;
+      const located = profiles.filter((p) => p.status === "REPORTED_FOUND").length;
+      const reunited = profiles.filter((p) => p.status === "REUNITED").length;
+      const resRate = total > 0 ? `${Math.round((reunited / total) * 100)}%` : "0%";
+      const reportId = `JANRAKSHA-REP-${Date.now().toString().slice(-6)}`;
+
       // Header
-      doc.setFontSize(16);
+      doc.setFontSize(15);
       doc.setTextColor(11, 31, 58);
       doc.text("JANRAKSHA ID — OFFICIAL REUNIFICATION & INCIDENT REPORT", 14, 18);
 
       doc.setFontSize(9);
       doc.setTextColor(100, 116, 139);
-      doc.text(`Report ID: ${report.reportId}  |  Generated: ${new Date().toLocaleString()}`, 14, 25);
-      doc.text(`Jurisdiction: ${report.jurisdiction}`, 14, 30);
+      doc.text(`Report ID: ${reportId}  |  Generated: ${new Date().toLocaleString()}`, 14, 25);
+      doc.text("Authority: National Emergency Response & Family Reunification Desk", 14, 30);
 
       // Summary Table
       autoTable(doc, {
         startY: 36,
         head: [["Total Monitored", "Active Missing", "Located at Desks", "Reunited with Family", "Resolution Rate"]],
         body: [[
-          report.executiveSummary.totalMonitored,
-          report.executiveSummary.activeMissing,
-          report.executiveSummary.locatedAtHelpdesks,
-          report.executiveSummary.reunitedWithFamily,
-          report.executiveSummary.resolutionRate,
+          total,
+          activeMissing,
+          located,
+          reunited,
+          resRate,
         ]],
         theme: "grid",
         headStyles: { fillColor: [11, 31, 58], textColor: 255 },
@@ -222,14 +226,14 @@ export default function DashboardClient() {
       autoTable(doc, {
         startY: (doc as any).lastAutoTable.finalY + 10,
         head: [["ID Code", "Name", "Type", "Status", "Guardian", "Phone", "Medical Notes"]],
-        body: report.records.map((r: any) => [
-          r.code,
-          r.name,
-          r.classification,
-          r.status,
-          r.guardian,
-          r.phone,
-          r.medicalFlag,
+        body: profiles.map((r: any) => [
+          r.janRakshaCode || r.id,
+          r.fullName,
+          r.personType || "GENERAL",
+          r.status || "SAFE",
+          r.guardianName,
+          r.guardianPhone,
+          r.chronicIllness || r.allergies || r.criticalNotes || "None",
         ]),
         theme: "striped",
         headStyles: { fillColor: [23, 105, 224], textColor: 255 },
@@ -238,7 +242,7 @@ export default function DashboardClient() {
 
       doc.save(`JanRaksha_Incident_Report_${Date.now().toString().slice(-6)}.pdf`);
     } catch (err) {
-      console.error(err);
+      console.error("PDF generation error:", err);
       alert("Failed to generate PDF report.");
     }
   };
