@@ -1,6 +1,22 @@
 // Compact URL-safe encoder and decoder for JanRaksha emergency profiles
 // Enables 100% resilient offline and serverless QR code scanning without database dependency
 
+export function getWebappBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem("janraksha_custom_domain");
+    if (saved && saved.trim()) {
+      return saved.trim().replace(/\/$/, "");
+    }
+    const origin = window.location.origin;
+    // When running on localhost, default to the deployed Vercel URL so phone cameras scanning QR codes hit the webapp
+    if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
+      return "https://janraksha-id-demo.vercel.app";
+    }
+    return origin;
+  }
+  return process.env.NEXT_PUBLIC_APP_URL || "https://janraksha-id-demo.vercel.app";
+}
+
 export interface CompactProfile {
   c: string; // janRakshaCode
   n: string; // fullName

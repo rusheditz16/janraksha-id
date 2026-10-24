@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import QRCode from "qrcode";
-import { encodeProfilePayload } from "@/lib/qrPayload";
+import { encodeProfilePayload, getWebappBaseUrl } from "@/lib/qrPayload";
 import {
   Download,
   Printer,
@@ -14,7 +14,10 @@ import {
   CheckCircle2,
   FileCheck,
   AlertCircle,
-  ExternalLink
+  ExternalLink,
+  Globe,
+  Edit3,
+  Check
 } from "lucide-react";
 
 interface IdCardPreviewProps {
@@ -40,12 +43,21 @@ interface IdCardPreviewProps {
 export default function IdCardPreview({ profile }: IdCardPreviewProps) {
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [scanUrl, setScanUrl] = useState<string>(`/scan/${profile.janRakshaCode}`);
+  const [domain, setDomain] = useState<string>("");
+  const [isEditingDomain, setIsEditingDomain] = useState(false);
+  const [customDomainInput, setCustomDomainInput] = useState("");
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const base = getWebappBaseUrl();
+    setDomain(base);
+    setCustomDomainInput(base);
+  }, []);
+
+  useEffect(() => {
+    if (!domain) return;
     const token = encodeProfilePayload(profile);
-    const generatedUrl = `${origin}/scan/${encodeURIComponent(profile.janRakshaCode)}${
+    const generatedUrl = `${domain}/scan/${encodeURIComponent(profile.janRakshaCode)}${
       token ? `?d=${token}` : ""
     }`;
     setScanUrl(generatedUrl);
@@ -53,6 +65,7 @@ export default function IdCardPreview({ profile }: IdCardPreviewProps) {
     QRCode.toDataURL(generatedUrl, {
       width: 340,
       margin: 1,
+      errorCorrectionLevel: "M",
       color: {
         dark: "#0B1F3A",
         light: "#FFFFFF",
@@ -60,7 +73,19 @@ export default function IdCardPreview({ profile }: IdCardPreviewProps) {
     })
       .then((url) => setQrDataUrl(url))
       .catch((err) => console.error(err));
-  }, [profile]);
+  }, [profile, domain]);
+
+  const handleSaveDomain = () => {
+    let clean = customDomainInput.trim().replace(/\/$/, "");
+    if (!clean.startsWith("http://") && !clean.startsWith("https://")) {
+      clean = "https://" + clean;
+    }
+    setDomain(clean);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("janraksha_custom_domain", clean);
+    }
+    setIsEditingDomain(false);
+  };
 
   const handlePrint = () => {
     window.print();
@@ -69,6 +94,47 @@ export default function IdCardPreview({ profile }: IdCardPreviewProps) {
   return (
     <div className="space-y-6">
       
+      {/* Target Webapp Destination for Scanners */}
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs no-print">
+        <div className="flex items-center gap-2">
+          <Globe className="w-4 h-4 text-[#1769E0] shrink-0" />
+          <span className="text-[#64748B]">QR Scanner Destination:</span>
+          {isEditingDomain ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={customDomainInput}
+                onChange={(e) => setCustomDomainInput(e.target.value)}
+                placeholder="https://janraksha-id-demo.vercel.app"
+                className="bg-white border border-slate-300 rounded px-2 py-1 text-xs font-mono text-[#0B1F3A] w-64 focus:outline-none focus:border-[#1769E0]"
+              />
+              <button
+                type="button"
+                onClick={handleSaveDomain}
+                className="px-2.5 py-1 bg-[#138A62] text-white rounded text-xs font-semibold flex items-center gap-1"
+              >
+                <Check className="w-3 h-3" /> Save
+              </button>
+            </div>
+          ) : (
+            <span className="font-mono font-bold text-[#0B1F3A] bg-white px-2 py-0.5 rounded border border-slate-200">
+              {domain || "Loading..."}
+            </span>
+          )}
+        </div>
+
+        {!isEditingDomain && (
+          <button
+            type="button"
+            onClick={() => setIsEditingDomain(true)}
+            className="text-[11px] font-semibold text-[#1769E0] hover:underline flex items-center gap-1"
+          >
+            <Edit3 className="w-3 h-3" />
+            <span>Change Webapp URL</span>
+          </button>
+        )}
+      </div>
+
       {/* Top Action Toolbar */}
       <div className="bg-white p-4 rounded-xl border border-[#DCE5F0] flex flex-wrap items-center justify-between gap-3 shadow-sm no-print">
         <div className="flex items-center gap-3">
