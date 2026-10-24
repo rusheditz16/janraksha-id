@@ -76,3 +76,31 @@ body {
     page-break-inside: avoid;
   }
 }
+
+/* High-Contrast / Large-Text Field Mode for Extreme Sunlight & Disaster Camps */
+body.field-high-contrast {
+  font-size: 1.05rem !important;
+  color: #000000 !important;
+  background-color: #FFFFFF !important;
+}
+
+body.field-high-contrast button,
+body.field-high-contrast input,
+body.field-high-contrast select,
+body.field-high-contrast textarea {
+  border-width: 2px !important;
+  border-color: #000000 !important;
+  font-weight: 700 !important;
+}
+
+body.field-high-contrast .border {
+  border-color: #000000 !important;
+  border-width: 2px !important;
+}
+
+body.field-high-contrast .text-slate-600,
+body.field-high-contrast .text-slate-500,
+body.field-high-contrast .text-slate-400 {
+  color: #0F172A !important;
+  font-weight: 600 !important;
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -11,18 +11,73 @@ import {
   Menu,
   X,
   Phone,
-  Shield
+  Shield,
+  Globe,
+  Sun,
+  Moon,
+  Wifi,
+  WifiOff
 } from "lucide-react";
+import { LanguageCode, getTranslation } from "@/lib/translations";
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+  const [lang, setLang] = useState<LanguageCode>("en");
+  const [highContrast, setHighContrast] = useState(false);
   const pathname = usePathname();
 
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    // Load saved settings
+    try {
+      const savedLang = localStorage.getItem("janraksha_lang") as LanguageCode;
+      if (savedLang) setLang(savedLang);
+      const savedHC = localStorage.getItem("janraksha_high_contrast") === "true";
+      setHighContrast(savedHC);
+      if (savedHC) document.body.classList.add("field-high-contrast");
+    } catch (e) {}
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  const handleLangChange = (code: LanguageCode) => {
+    setLang(code);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("janraksha_lang", code);
+      window.dispatchEvent(new Event("janraksha_lang_changed"));
+    }
+  };
+
+  const toggleHighContrast = () => {
+    const next = !highContrast;
+    setHighContrast(next);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("janraksha_high_contrast", String(next));
+      if (next) {
+        document.body.classList.add("field-high-contrast");
+      } else {
+        document.body.classList.remove("field-high-contrast");
+      }
+    }
+  };
+
+  const t = getTranslation(lang);
+
   const navItems = [
-    { href: "/", label: "Home" },
-    { href: "/dashboard", label: "Operations Dashboard", icon: LayoutDashboard },
-    { href: "/scanner", label: "Volunteer Scanner", icon: QrCode },
-    { href: "/register", label: "Register a Person", icon: UserPlus },
+    { href: "/", label: t.home },
+    { href: "/dashboard", label: t.dashboard, icon: LayoutDashboard },
+    { href: "/scanner", label: t.scanner, icon: QrCode },
+    { href: "/register", label: t.registerPerson, icon: UserPlus },
   ];
 
   return (
@@ -31,28 +86,60 @@ export default function Navbar() {
       <div className="bg-[#0B1F3A] text-white text-xs py-1.5 px-4 border-b border-slate-700/50">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="inline-block w-2 h-2 rounded-full bg-[#138A62]" />
             <span className="font-semibold text-slate-200">
               National Emergency & Family Reunification Network
             </span>
             <span className="text-slate-400 hidden sm:inline">|</span>
             <span className="text-slate-300 hidden sm:inline text-[11px]">
-              Simulated Demonstration Environment
+              Humanitarian Data & UNICEF CPMS Compliant
             </span>
           </div>
 
-          <div className="flex items-center gap-4 text-[11px] text-slate-300">
-            <span className="flex items-center gap-1 font-medium">
-              <Phone className="w-3 h-3 text-[#E5484D]" /> Police: <strong className="text-white">112</strong>
-            </span>
-            <span>•</span>
-            <span className="flex items-center gap-1 font-medium">
-              Childline: <strong className="text-white">1098</strong>
-            </span>
-            <span>•</span>
-            <span className="flex items-center gap-1 font-medium text-emerald-400">
-              System: Online
-            </span>
+          <div className="flex items-center gap-3 text-[11px] text-slate-300">
+            {/* Real-time Connectivity Indicator */}
+            {isOnline ? (
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/30">
+                <Wifi className="w-3 h-3 text-emerald-400" />
+                <span className="font-medium">Live Online</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-500/30 animate-pulse">
+                <WifiOff className="w-3 h-3 text-amber-400" />
+                <span className="font-bold">Offline Field Mode (Queued)</span>
+              </span>
+            )}
+
+            {/* High Contrast / Field Visibility Toggle */}
+            <button
+              type="button"
+              onClick={toggleHighContrast}
+              title="Toggle Large-Text High-Contrast Field Mode"
+              className={`px-2 py-0.5 rounded border transition-colors flex items-center gap-1 ${
+                highContrast
+                  ? "bg-amber-400 text-black font-bold border-amber-300"
+                  : "bg-slate-800 text-slate-300 border-slate-700 hover:text-white"
+              }`}
+            >
+              <Sun className="w-3 h-3" />
+              <span className="hidden sm:inline">High Contrast</span>
+            </button>
+
+            {/* Language Selector */}
+            <div className="flex items-center gap-1 bg-slate-800 rounded px-1.5 py-0.5 border border-slate-700">
+              <Globe className="w-3 h-3 text-blue-400" />
+              <select
+                value={lang}
+                onChange={(e) => handleLangChange(e.target.value as LanguageCode)}
+                className="bg-transparent text-white text-[11px] font-semibold focus:outline-none cursor-pointer"
+              >
+                <option value="en" className="text-slate-900">EN</option>
+                <option value="hi" className="text-slate-900">हिन्दी</option>
+                <option value="bn" className="text-slate-900">বাংলা</option>
+                <option value="gu" className="text-slate-900">ગુજરાતી</option>
+                <option value="mr" className="text-slate-900">मराठी</option>
+                <option value="ta" className="text-slate-900">தமிழ்</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
