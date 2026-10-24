@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+/* ============================================================
+   JANRAKSHA ID — OFFICIAL DESIGN SYSTEM SPECIFICATION
+   Enterprise Humanitarian Emergency Management & Public Safety
+   ============================================================ */
+
+:root {
+  /* Official Color Tokens */
+  --color-deep-navy: #0B1F3A;
+  --color-primary-blue: #1769E0;
+  --color-primary-blue-hover: #1255B8;
+  --color-emergency-coral: #E5484D;
+  --color-emergency-coral-light: #FEECEE;
+  --color-success-green: #138A62;
+  --color-success-green-light: #EBF8F3;
+  --color-warning-amber: #D97706;
+  --color-warning-amber-light: #FEF3C7;
+  
+  --color-bg-light: #F5F8FC;
+  --color-surface-white: #FFFFFF;
+  --color-text-primary: #172B4D;
+  --color-text-secondary: #64748B;
+  --color-text-muted: #94A3B8;
+  --color-border-subtle: #DCE5F0;
+  --color-border-focus: #1769E0;
+
+  --shadow-subtle: 0 1px 3px rgba(11, 31, 58, 0.05), 0 1px 2px rgba(11, 31, 58, 0.03);
+  --shadow-card: 0 4px 6px -1px rgba(11, 31, 58, 0.05), 0 2px 4px -2px rgba(11, 31, 58, 0.03);
+  --shadow-elevated: 0 10px 15px -3px rgba(11, 31, 58, 0.06), 0 4px 6px -4px rgba(11, 31, 58, 0.04);
+  --shadow-modal: 0 25px 50px -12px rgba(11, 31, 58, 0.2);
+}
+
+body {
+  background-color: var(--color-bg-light);
+  color: var(--color-text-primary);
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Focus Ring */
+*:focus-visible {
+  outline: 2px solid var(--color-primary-blue);
+  outline-offset: 2px;
+}
+
+/* Print Layout Optimization for ID Badges */
+@media print {
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+  }
+  header, footer, nav, .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .print-card-break {
+    page-break-inside: avoid;
+  }
+}

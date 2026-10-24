@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+enum PersonType {
+  CHILD
+  ELDERLY
+  PATIENT
+  EVENT_ATTENDEE
+  GENERAL
+}
+
+enum CaseStatus {
+  SAFE
+  REPORTED_MISSING
+  REPORTED_FOUND
+  REUNITED
+}
+
+enum BloodGroup {
+  A_POSITIVE
+  A_NEGATIVE
+  B_POSITIVE
+  B_NEGATIVE
+  AB_POSITIVE
+  AB_NEGATIVE
+  O_POSITIVE
+  O_NEGATIVE
+  UNKNOWN
+}
+
+enum UserRole {
+  PUBLIC_FINDER
+  VOLUNTEER
+  POLICE_OFFICER
+  EVENT_ADMIN
+}
+
+model HelpdeskBooth {
+  id          String   @id @default(cuid())
+  name        String   // e.g. "Booth #3 - North Gate Medical Center"
+  zone        String   // e.g. "Zone A - Concourse"
+  latitude    Float
+  longitude   Float
+  contactName String?
+  contactPhone String?
+  isOperational Boolean @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model PersonProfile {
+  id              String         @id @default(cuid())
+  janRakshaCode   String         @unique // Human-readable short ID, e.g. JR-892147
+  fullName        String
+  age             Int?
+  gender          String?
+  personType      PersonType     @default(GENERAL)
+  photoUrl        String?
+  
+  // Emergency Guardians
+  guardianName    String
+  guardianPhone   String
+  guardianAltPhone String?
+  guardianEmail   String?
+  guardianAddress String?
+  
+  // Medical Alert Notes
+  bloodGroup      BloodGroup     @default(UNKNOWN)
+  allergies       String?
+  chronicIllness  String?
+  criticalNotes   String?
+  emergencyDoctor String?
+  doctorPhone     String?
+
+  // Wristband / Event Tag Info
+  eventName       String?
+  assignedBooth   String?
+  wristbandUid    String?
+
+  // Reunification Status
+  status          CaseStatus     @default(SAFE)
+  lastSeenLocation String?
+  lastSeenTime    DateTime?
+
+  // Relations
+  scanLogs        ScanLog[]
+  reunificationNotes ReunificationNote[]
+  dispatchAlerts  DispatchNotification[]
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model ScanLog {
+  id              String        @id @default(cuid())
+  profileId       String
+  profile         PersonProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  scannedAt       DateTime      @default(now())
+  scanType        String        @default("PUBLIC_QR") // PUBLIC_QR, VOLUNTEER_SCAN, NFC_TAP
+  
+  // Finder & Location data
+  finderName      String?
+  finderPhone     String?
+  finderNotes     String?
+  latitude        Float?
+  longitude       Float?
+  locationAddress String?
+  nearestBoothId  String?
+  nearestBoothDist String?      // e.g. "140 meters away"
+
+  // Emergency SOS trigger
+  isSosAlert      Boolean       @default(false)
+}
+
+model DispatchNotification {
+  id              String        @id @default(cuid())
+  profileId       String
+  profile         PersonProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  channel         String        // "SMS", "WHATSAPP", "SYSTEM_BROADCAST"
+  recipient       String        // Guardian Phone Number
+  messageBody     String
+  status          String        @default("DELIVERED") // PENDING, DELIVERED, READ
+  mapsUrl         String?
+  sentAt          DateTime      @default(now())
+}
+
+model ReunificationNote {
+  id              String        @id @default(cuid())
+  profileId       String
+  profile         PersonProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  authorName      String
+  authorRole      String        // POLICE, VOLUNTEER, CAMP_ADMIN, FINDER_PUBLIC
+  note            String
+  createdAt       DateTime      @default(now())
+}
+
+model AuditLedger {
+  id              String        @id @default(cuid())
+  actionType      String        // STATUS_CHANGE, PROFILE_CREATED, SOS_DISPATCHED, SENSITIVE_VIEW
+  recordCode      String        // e.g. JR-KID-4029
+  actorName       String        // Officer name, Finder name, or System
+  actorRole       UserRole      @default(PUBLIC_FINDER)
+  ipAddress       String?
+  details         String
+  timestamp       DateTime      @default(now())
+}
