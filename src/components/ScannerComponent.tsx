@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { encodeProfilePayload } from "@/lib/qrPayload";
 import {
   QrCode,
   Camera,
@@ -12,7 +13,9 @@ import {
   CheckCircle2,
   X,
   Shield,
-  HelpCircle
+  HelpCircle,
+  Clock,
+  User
 } from "lucide-react";
 
 export default function ScannerComponent() {
@@ -22,13 +25,32 @@ export default function ScannerComponent() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [nfcReading, setNfcReading] = useState(false);
   const [nfcMessage, setNfcMessage] = useState<string | null>(null);
+  const [recentLocal, setRecentLocal] = useState<any[]>([]);
 
   const scannerRef = useRef<any>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("janraksha_recent_profiles");
+      if (raw) {
+        setRecentLocal(JSON.parse(raw));
+      }
+    } catch (e) {}
+  }, []);
 
   const handleManualSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!manualCode.trim()) return;
-    router.push(`/scan/${encodeURIComponent(manualCode.trim())}`);
+    const query = manualCode.trim().toUpperCase();
+    const match = recentLocal.find(
+      (p) => p.janRakshaCode?.toUpperCase() === query || p.id === manualCode.trim()
+    );
+    if (match) {
+      const token = encodeProfilePayload(match);
+      router.push(`/scan/${encodeURIComponent(match.janRakshaCode)}${token ? `?d=${token}` : ""}`);
+    } else {
+      router.push(`/scan/${encodeURIComponent(manualCode.trim())}`);
+    }
   };
 
   const startCamera = async () => {
@@ -47,13 +69,20 @@ export default function ScannerComponent() {
           qrbox: { width: 250, height: 250 },
         },
         (decodedText) => {
-          let targetCode = decodedText;
-          if (decodedText.includes("/scan/")) {
-            const parts = decodedText.split("/scan/");
-            targetCode = parts[parts.length - 1];
-          }
           html5QrCode.stop().then(() => {
-            router.push(`/scan/${encodeURIComponent(targetCode)}`);
+            if (decodedText.startsWith("http://") || decodedText.startsWith("https://")) {
+              try {
+                const url = new URL(decodedText);
+                router.push(url.pathname + url.search);
+                return;
+              } catch (e) {}
+            }
+            if (decodedText.includes("/scan/")) {
+              const rel = decodedText.substring(decodedText.indexOf("/scan/"));
+              router.push(rel);
+              return;
+            }
+            router.push(`/scan/${encodeURIComponent(decodedText.trim())}`);
           });
         },
         () => {}
@@ -226,9 +255,41 @@ export default function ScannerComponent() {
           </button>
         </form>
 
+        {/* Recently Registered Quick Access Chips */}
+        {recentLocal.length > 0 && (
+          <div className="pt-2 border-t border-slate-100 space-y-1.5">
+            <span className="text-[11px] font-bold text-[#0B1F3A] flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-[#1769E0]" />
+              <span>Recently Registered Records ({recentLocal.length}):</span>
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {recentLocal.slice(0, 6).map((p) => {
+                const token = encodeProfilePayload(p);
+                return (
+                  <button
+                    key={p.janRakshaCode || p.id}
+                    type="button"
+                    onClick={() =>
+                      router.push(
+                        `/scan/${encodeURIComponent(p.janRakshaCode)}${token ? `?d=${token}` : ""}`
+                      )
+                    }
+                    className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#1769E0] font-mono text-[11px] font-bold border border-blue-200 transition-colors flex items-center gap-1"
+                  >
+                    <span>{p.janRakshaCode}</span>
+                    <span className="font-sans font-normal text-slate-500">
+                      ({p.fullName.split(" ")[0]})
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Quick Simulation Chips */}
         <div className="pt-2 text-xs text-[#64748B] flex flex-wrap items-center justify-between gap-2 border-t border-slate-100">
-          <span>Test Demonstration Records:</span>
+          <span>Demo Verification Records:</span>
           <div className="flex gap-2">
             <button
               type="button"

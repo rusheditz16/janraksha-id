@@ -1,22 +1,39 @@
-import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { findProfileInMemory, saveProfileToMemory } from "@/lib/memoryStore";
+import { decodeProfilePayload } from "@/lib/qrPayload";
 import EmergencyClientView from "@/components/EmergencyClientView";
+import ScanClientFallback from "@/components/ScanClientFallback";
 
 export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ code: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-export default async function ScanPage({ params }: PageProps) {
+export default async function ScanPage({ params, searchParams }: PageProps) {
   const { code } = await params;
+  const sParams = await searchParams;
+
+  // 1. Check for encoded profile payload from QR code
+  const rawToken = sParams?.d || sParams?.data;
+  const token = typeof rawToken === "string" ? rawToken : Array.isArray(rawToken) ? rawToken[0] : null;
+
   let profile: any = null;
 
-  // 1. Try finding in universal memory store first
-  profile = findProfileInMemory(code);
+  if (token) {
+    profile = decodeProfilePayload(token);
+    if (profile) {
+      saveProfileToMemory(profile);
+    }
+  }
 
-  // 2. If not found in memory store, try database
+  // 2. Try universal in-memory store
+  if (!profile) {
+    profile = findProfileInMemory(code);
+  }
+
+  // 3. Try database lookup
   if (!profile) {
     try {
       profile = await prisma.personProfile.findFirst({
@@ -42,17 +59,17 @@ export default async function ScanPage({ params }: PageProps) {
         saveProfileToMemory(profile);
       }
     } catch (err) {
-      console.warn("DB lookup exception caught, checking memory store:", err);
+      console.warn("Database lookup failed in scan page:", err);
       profile = findProfileInMemory(code);
     }
   }
 
-  // 3. Fallback not found
+  // 4. If not found on server, render resilient client resolver (checks localStorage and API)
   if (!profile) {
-    return notFound();
+    return <ScanClientFallback code={code} />;
   }
 
-  // 4. Record passive scan log if DB available
+  // 5. Record passive scan log if DB is writable
   try {
     await prisma.scanLog.create({
       data: {

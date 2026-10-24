@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { encodeProfilePayload } from "@/lib/qrPayload";
 import {
   User,
   Phone,
@@ -14,15 +15,38 @@ import {
   FileCheck,
   Building2,
   Lock,
-  ExternalLink
+  ExternalLink,
+  Clock
 } from "lucide-react";
 import IdCardPreview from "@/components/IdCardPreview";
 
 export default function RegisterForm() {
   const [currentStep, setCurrentStep] = useState(1);
   const [createdProfile, setCreatedProfile] = useState<any | null>(null);
+  const [recentProfiles, setRecentProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [consentGiven, setConsentGiven] = useState(true);
+
+  // Load recent profiles on mount from browser localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("janraksha_recent_profiles");
+      if (raw) {
+        setRecentProfiles(JSON.parse(raw));
+      } else {
+        fetch("/api/profiles")
+          .then((res) => res.json())
+          .then((json) => {
+            if (json.success && Array.isArray(json.data)) {
+              setRecentProfiles(json.data.slice(0, 4));
+            }
+          })
+          .catch(() => {});
+      }
+    } catch (e) {
+      console.warn("Recent profiles load notice:", e);
+    }
+  }, []);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -131,7 +155,22 @@ export default function RegisterForm() {
 
       const json = await res.json();
       if (json.success) {
-        setCreatedProfile(json.data);
+        const newProfile = json.data;
+        setCreatedProfile(newProfile);
+
+        // Update local persistent storage so recent section displays this person immediately
+        try {
+          const raw = localStorage.getItem("janraksha_recent_profiles");
+          const existing = raw ? JSON.parse(raw) : [];
+          const updated = [
+            newProfile,
+            ...existing.filter((p: any) => p.janRakshaCode !== newProfile.janRakshaCode),
+          ].slice(0, 20);
+          localStorage.setItem("janraksha_recent_profiles", JSON.stringify(updated));
+          setRecentProfiles(updated);
+        } catch (storageErr) {
+          console.warn("Storage update notice:", storageErr);
+        }
       } else {
         alert("Registration failed: " + json.error);
       }
@@ -171,7 +210,11 @@ export default function RegisterForm() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <a
-                href={`/scan/${createdProfile.janRakshaCode}`}
+                href={`/scan/${encodeURIComponent(createdProfile.janRakshaCode)}${
+                  encodeProfilePayload(createdProfile)
+                    ? `?d=${encodeProfilePayload(createdProfile)}`
+                    : ""
+                }`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs font-semibold px-4 py-2 rounded-lg bg-[#1769E0] text-white hover:bg-[#1255B8] flex items-center gap-1.5 transition-colors shadow-sm"
@@ -629,6 +672,114 @@ export default function RegisterForm() {
 
         </div>
       )}
+
+      {/* RECENT SECTION: Displays every added person with full details & quick actions */}
+      <div className="mt-12 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#DCE5F0] pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#1769E0] flex items-center justify-center border border-blue-200">
+              <Clock className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-[#0B1F3A]">Recently Registered Persons</h2>
+              <p className="text-xs text-[#64748B]">
+                Newly generated digital identities, printable QR wristbands, and verified emergency scan links.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-[#172B4D] border border-slate-200">
+              {recentProfiles.length} Total Registered
+            </span>
+          </div>
+        </div>
+
+        {recentProfiles.length === 0 ? (
+          <div className="bg-white rounded-xl border border-[#DCE5F0] p-8 text-center text-xs text-[#64748B]">
+            No registrations yet. Complete the wizard above to issue your first JanRaksha Emergency ID.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {recentProfiles.map((person) => {
+              const pToken = encodeProfilePayload(person);
+              const pScanUrl = `/scan/${encodeURIComponent(person.janRakshaCode)}${
+                pToken ? `?d=${pToken}` : ""
+              }`;
+              return (
+                <div
+                  key={person.janRakshaCode || person.id}
+                  className="bg-white rounded-xl border border-[#DCE5F0] p-4 shadow-sm hover:border-[#1769E0]/50 transition-all flex flex-col justify-between space-y-3"
+                >
+                  <div className="flex items-start gap-3.5">
+                    {person.photoUrl ? (
+                      <img
+                        src={person.photoUrl}
+                        alt={person.fullName}
+                        className="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
+                        <User className="w-6 h-6 text-slate-400" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <h4 className="font-bold text-sm text-[#0B1F3A] truncate">{person.fullName}</h4>
+                        <span className="font-mono text-[10px] font-bold text-[#1769E0] bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                          {person.janRakshaCode}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-[#64748B] flex flex-wrap items-center gap-2 mt-0.5">
+                        <span className="font-semibold text-slate-700">{person.personType}</span>
+                        {person.age && <span>• Age: {person.age}</span>}
+                        {person.bloodGroup && person.bloodGroup !== "UNKNOWN" && (
+                          <span className="text-[#E5484D] font-bold">
+                            • Blood: {person.bloodGroup.replace("_", " ")}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-[#64748B] mt-1 truncate">
+                        Guardian: <strong className="text-[#0B1F3A]">{person.guardianName}</strong>{" "}
+                        ({person.guardianPhone})
+                      </div>
+                    </div>
+                  </div>
+
+                  {person.criticalNotes && (
+                    <div className="text-[11px] text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-200 truncate">
+                      <strong>Medical Note:</strong> {person.criticalNotes}
+                    </div>
+                  )}
+
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCreatedProfile(person);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#172B4D] flex items-center gap-1.5 transition-colors"
+                    >
+                      <Shield className="w-3.5 h-3.5 text-[#1769E0]" />
+                      <span>View Badge & QR</span>
+                    </button>
+
+                    <a
+                      href={pScanUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#1769E0] border border-blue-200 flex items-center gap-1.5 transition-colors"
+                    >
+                      <span>Emergency View</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
     </div>
   );

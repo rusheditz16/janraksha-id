@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import QRCode from "qrcode";
+import { encodeProfilePayload } from "@/lib/qrPayload";
 import {
   Download,
   Printer,
@@ -38,14 +39,19 @@ interface IdCardPreviewProps {
 
 export default function IdCardPreview({ profile }: IdCardPreviewProps) {
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
+  const [scanUrl, setScanUrl] = useState<string>(`/scan/${profile.janRakshaCode}`);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const scanUrl = `${origin}/scan/${profile.janRakshaCode}`;
+    const token = encodeProfilePayload(profile);
+    const generatedUrl = `${origin}/scan/${encodeURIComponent(profile.janRakshaCode)}${
+      token ? `?d=${token}` : ""
+    }`;
+    setScanUrl(generatedUrl);
 
-    QRCode.toDataURL(scanUrl, {
-      width: 320,
+    QRCode.toDataURL(generatedUrl, {
+      width: 340,
       margin: 1,
       color: {
         dark: "#0B1F3A",
@@ -54,7 +60,7 @@ export default function IdCardPreview({ profile }: IdCardPreviewProps) {
     })
       .then((url) => setQrDataUrl(url))
       .catch((err) => console.error(err));
-  }, [profile.janRakshaCode]);
+  }, [profile]);
 
   const handlePrint = () => {
     window.print();
@@ -77,7 +83,7 @@ export default function IdCardPreview({ profile }: IdCardPreviewProps) {
 
         <div className="flex items-center gap-2">
           <a
-            href={`/scan/${profile.janRakshaCode}`}
+            href={scanUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-xs font-semibold text-[#1769E0] border border-blue-200 transition-colors"

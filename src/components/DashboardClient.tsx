@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { encodeProfilePayload } from "@/lib/qrPayload";
 import {
   Shield,
   LayoutDashboard,
@@ -73,14 +74,54 @@ export default function DashboardClient() {
 
       const res = await fetch(`/api/profiles?${params.toString()}`);
       const data = await res.json();
-      if (data.success) {
-        setProfiles(data.data);
-        if (selectedProfile) {
-          const updated = data.data.find((p: any) => p.id === selectedProfile.id);
-          if (updated) setSelectedProfile(updated);
-        } else if (data.data.length > 0) {
-          setSelectedProfile(data.data[0]);
+      let combined: any[] = data.success && Array.isArray(data.data) ? data.data : [];
+
+      // Merge with browser localStorage recent profiles so newly added persons are always visible
+      try {
+        const raw = localStorage.getItem("janraksha_recent_profiles");
+        if (raw) {
+          const localList: any[] = JSON.parse(raw);
+          const map = new Map<string, any>();
+          // Local registrations placed first
+          localList.forEach((p) => {
+            if (p.janRakshaCode) map.set(p.janRakshaCode.toUpperCase(), p);
+          });
+          // Then server list
+          combined.forEach((p) => {
+            const key = p.janRakshaCode?.toUpperCase();
+            if (key && !map.has(key)) {
+              map.set(key, p);
+            }
+          });
+          combined = Array.from(map.values());
         }
+      } catch (storageErr) {
+        console.warn("Storage merge notice:", storageErr);
+      }
+
+      // Filter locally in case query or filters are active
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        combined = combined.filter(
+          (p) =>
+            p.fullName?.toLowerCase().includes(q) ||
+            p.janRakshaCode?.toLowerCase().includes(q) ||
+            p.guardianName?.toLowerCase().includes(q)
+        );
+      }
+      if (statusFilter !== "ALL") {
+        combined = combined.filter((p) => p.status === statusFilter);
+      }
+      if (typeFilter !== "ALL") {
+        combined = combined.filter((p) => p.personType === typeFilter);
+      }
+
+      setProfiles(combined);
+      if (selectedProfile) {
+        const updated = combined.find((p: any) => p.id === selectedProfile.id || p.janRakshaCode === selectedProfile.janRakshaCode);
+        if (updated) setSelectedProfile(updated);
+      } else if (combined.length > 0) {
+        setSelectedProfile(combined[0]);
       }
     } catch (err) {
       console.error(err);
@@ -584,7 +625,9 @@ export default function DashboardClient() {
                         </span>
                       )}
                       <Link
-                        href={`/scan/${p.janRakshaCode}`}
+                        href={`/scan/${encodeURIComponent(p.janRakshaCode)}${
+                          encodeProfilePayload(p) ? `?d=${encodeProfilePayload(p)}` : ""
+                        }`}
                         target="_blank"
                         className="p-1.5 rounded-lg text-slate-400 hover:text-[#0B1F3A] hover:bg-slate-100"
                         title="Open Scan Verification"
@@ -611,11 +654,15 @@ export default function DashboardClient() {
                     <p className="text-xs font-mono text-[#1769E0] font-semibold">{selectedProfile.janRakshaCode}</p>
                   </div>
                   <Link
-                    href={`/scan/${selectedProfile.janRakshaCode}`}
+                    href={`/scan/${encodeURIComponent(selectedProfile.janRakshaCode)}${
+                      encodeProfilePayload(selectedProfile)
+                        ? `?d=${encodeProfilePayload(selectedProfile)}`
+                        : ""
+                    }`}
                     target="_blank"
                     className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-50 text-[#1769E0] hover:bg-blue-100 transition-colors"
                   >
-                    View Card →
+                    View Emergency Card →
                   </Link>
                 </div>
 
